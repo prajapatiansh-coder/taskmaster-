@@ -1,0 +1,286 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="container">
+    <!-- Dashboard Stats & Assistant -->
+    <div class="row mb-5 g-4">
+        <!-- Main Stats -->
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm rounded-4 h-100 bg-primary text-white overflow-hidden position-relative">
+                <div class="card-body p-4 position-relative z-1">
+                    <h6 class="text-white-50 small fw-bold text-uppercase mb-1">Total Tasks</h6>
+                    <h2 class="display-6 fw-bold mb-0">{{ stats.total }}</h2>
+                    <i class="bi bi-list-check position-absolute end-0 bottom-0 opacity-25 me-3 mb-2" style="font-size: 4rem;"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm rounded-4 h-100 bg-warning text-dark overflow-hidden position-relative">
+                <div class="card-body p-4 position-relative z-1">
+                    <h6 class="text-dark-50 small fw-bold text-uppercase mb-1">Productivity Streak</h6>
+                    <h2 class="display-6 fw-bold mb-0">🔥 {{ current_user.streak }} <span class="fs-6 fw-normal">Days</span></h2>
+                    <i class="bi bi-fire position-absolute end-0 bottom-0 opacity-25 me-3 mb-2" style="font-size: 4rem;"></i>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Smart Assistant Card -->
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm rounded-4 h-100 bg-white border-start border-4 border-info">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center mb-3">
+                        <span class="bg-info-subtle p-2 rounded-3 me-2">
+                            <i class="bi bi-robot text-info"></i>
+                        </span>
+                        <h6 class="fw-bold mb-0">Smart Assistant</h6>
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <div class="bg-light p-2 rounded-3 small">
+                                <i class="bi bi-circle-fill text-warning me-1"></i> {{ stats.pending }} Pending
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="bg-light p-2 rounded-3 small">
+                                <i class="bi bi-lightning-fill text-danger me-1"></i> {{ stats.high_priority }} High Priority
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <div class="bg-light p-2 rounded-3 small text-truncate">
+                                <i class="bi bi-lightbulb-fill text-primary me-1"></i> {{ stats.suggestion }}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="progress rounded-pill shadow-sm" style="height: 8px; background-color: #f1f5f9;">
+                        <div class="progress-bar bg-info" role="progressbar" style="width: {{ stats.score }}%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Sidebar Widgets -->
+        <div class="col-lg-4 mb-4">
+            <!-- New Task Form -->
+            <div class="card border-0 shadow-sm rounded-4 mb-4">
+                <div class="card-body p-4">
+                    <h5 class="fw-bold mb-4 d-flex align-items-center small text-uppercase text-muted">
+                        <i class="bi bi-plus-circle me-2"></i> New Task
+                    </h5>
+                    <form action="{{ url_for('add_task') }}" method="POST">
+                        <div class="mb-3">
+                            <input type="text" name="title" class="form-control form-control-lg fs-6 rounded-3 bg-light border-0" placeholder="What's next?" required>
+                        </div>
+                        <div class="row g-2 mb-3">
+                            <div class="col-6">
+                                <select name="category" class="form-select rounded-3 fs-7 bg-light border-0">
+                                    <option value="Study">Study</option>
+                                    <option value="Personal" selected>Personal</option>
+                                    <option value="Exam">Exam</option>
+                                    <option value="Work">Work</option>
+                                </select>
+                            </div>
+                            <div class="col-6">
+                                <select name="priority" class="form-select rounded-3 fs-7 bg-light border-0">
+                                    <option value="High">High</option>
+                                    <option value="Medium" selected>Medium</option>
+                                    <option value="Low">Low</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="mb-4">
+                            <input type="date" name="deadline" class="form-control form-control-lg fs-6 rounded-3 bg-light border-0">
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100 py-3 fw-bold rounded-3 shadow-sm border-0">
+                            Add Task
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Pomodoro Timer -->
+            <div class="card border-0 shadow-sm rounded-4 bg-dark text-white overflow-hidden">
+                <div class="card-body p-4 text-center">
+                    <h6 class="small fw-bold text-uppercase opacity-50 mb-3">Pomodoro Focus</h6>
+                    <div class="display-4 fw-bold mb-3 font-monospace" id="timer">25:00</div>
+                    <div class="d-flex gap-2 justify-content-center">
+                        <button class="btn btn-primary btn-sm rounded-pill px-4" id="timerBtn" onclick="toggleTimer()">Start</button>
+                        <button class="btn btn-outline-light btn-sm rounded-pill px-4" onclick="resetTimer()">Reset</button>
+                    </div>
+                </div>
+                <div class="progress rounded-0" style="height: 4px;">
+                    <div id="timerProgress" class="progress-bar bg-primary" role="progressbar" style="width: 0%"></div>
+                </div>
+            </div>
+            
+            <a href="{{ url_for('dashboard', focus='on' if not focus_mode else 'off', filter=current_filter, category=current_category, priority=current_priority, search=search_query) }}" 
+               class="btn {{ 'btn-info' if focus_mode else 'btn-outline-info' }} w-100 py-2 fw-bold rounded-3 border-2 mt-4">
+                <i class="bi {{ 'bi-eye-fill' if focus_mode else 'bi-eye-slash' }} me-1"></i>
+                {{ 'Exit Focus' if focus_mode else 'Focus Mode' }}
+            </a>
+        </div>
+
+        <!-- Task List Content -->
+        <div class="col-lg-8">
+            <!-- Search & Filters -->
+            <div class="card border-0 shadow-sm rounded-4 mb-4">
+                <div class="card-body p-3">
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <form action="{{ url_for('dashboard') }}" method="GET" class="position-relative">
+                                <i class="bi bi-search position-absolute top-50 start-0 translate-middle-y ms-3 text-muted"></i>
+                                <input type="text" name="search" class="form-control rounded-pill ps-5 border-0 bg-light" placeholder="Search title or category..." value="{{ search_query }}">
+                                <input type="hidden" name="filter" value="{{ current_filter }}">
+                                <input type="hidden" name="category" value="{{ current_category }}">
+                                <input type="hidden" name="priority" value="{{ current_priority }}">
+                                <input type="hidden" name="focus" value="{{ 'on' if focus_mode else 'off' }}">
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tasks Rendering -->
+            {% if tasks %}
+                <div id="task-list" class="row g-3">
+                    {% for task in tasks %}
+                    <div class="col-12" data-id="{{ task.id }}">
+                        <div class="card border-0 shadow-sm rounded-4 task-card interactive-card {{ 'completed-opacity' if task.status == 'Completed' else '' }} 
+                                    {% if task.deadline_status == 'overdue' %}overdue-glow
+                                    {% elif task.deadline_status == 'today' %}today-glow
+                                    {% elif task.deadline_status == 'soon' %}soon-glow{% endif %}">
+                            <div class="card-body p-4">
+                                <div class="d-flex align-items-center gap-3">
+                                    <div class="drag-handle cursor-move opacity-25 me-2">
+                                        <i class="bi bi-grid-3x2-vertical" style="font-size: 1.2rem;"></i>
+                                    </div>
+                                    <div class="flex-shrink-0">
+                                        <a href="{{ url_for('complete_task', id=task.id) }}" class="task-status-btn d-flex align-items-center justify-content-center border-2 rounded-circle" 
+                                           style="width: 28px; height: 28px; border: 2px solid {{ '#198754' if task.status == 'Completed' else '#cbd5e1' }}; background: {{ '#198754' if task.status == 'Completed' else 'transparent' }};">
+                                            {% if task.status == 'Completed' %}
+                                                <i class="bi bi-check-lg text-white" style="font-size: 0.9rem;"></i>
+                                            {% endif %}
+                                        </a>
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        <div class="d-flex align-items-center gap-2 mb-1">
+                                            <h6 class="mb-0 fw-bold {{ 'task-text-completed' if task.status == 'Completed' else '' }}">
+                                                {{ task.title }}
+                                            </h6>
+                                            <span class="badge bg-light text-dark rounded-pill border fw-normal py-1 px-2 fs-8">{{ task.category }}</span>
+                                            <span class="badge rounded-pill fw-normal py-1 px-2 fs-8 {{ 'bg-danger-subtle text-danger border-danger-subtle' if task.priority == 'High' else 'bg-warning-subtle text-warning-emphasis border-warning-subtle' if task.priority == 'Medium' else 'bg-info-subtle text-info border-info-subtle' }}">
+                                                {{ task.priority }}
+                                            </span>
+                                        </div>
+                                        <div class="d-flex flex-wrap align-items-center gap-2 small text-muted">
+                                            {% if task.deadline_status == 'overdue' %}
+                                                <span class="badge bg-danger text-white rounded-pill fw-normal px-2">Overdue</span>
+                                            {% elif task.deadline_status == 'today' %}
+                                                <span class="badge bg-warning text-dark rounded-pill fw-normal px-2">Due Today</span>
+                                            {% elif task.deadline_status == 'soon' %}
+                                                <span class="badge bg-primary text-white rounded-pill fw-normal px-2">Due Soon</span>
+                                            {% elif task.deadline %}
+                                                <span><i class="bi bi-calendar3 me-1"></i> {{ task.deadline }}</span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="flex-shrink-0 ms-auto task-actions">
+                                        <div class="d-flex gap-2">
+                                            <a href="{{ url_for('edit_task', id=task.id) }}" class="btn btn-light btn-sm rounded-3 p-2 shadow-sm border" style="width: 36px; height: 36px;">
+                                                <i class="bi bi-pencil-square text-primary"></i>
+                                            </a>
+                                            <a href="{{ url_for('delete_task', id=task.id) }}" class="btn btn-light btn-sm rounded-3 p-2 shadow-sm border" style="width: 36px; height: 36px;" onclick="return confirm('Archive this task?')">
+                                                <i class="bi bi-trash3 text-danger"></i>
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="text-center py-5 bg-white rounded-4 shadow-sm border border-dashed">
+                    <div class="mb-3">
+                        <i class="bi bi-rocket-takeoff text-primary opacity-25" style="font-size: 4rem;"></i>
+                    </div>
+                    <h5 class="fw-bold">🚀 Start your journey!</h5>
+                    <p class="text-muted small px-5">Add your first task and let the Smart Assistant guide you to productivity.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Scripts for Drag and Drop & Timer -->
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+<script>
+    // Drag and Drop Logic
+    const taskList = document.getElementById('task-list');
+    if (taskList) {
+        new Sortable(taskList, {
+            handle: '.drag-handle',
+            animation: 150,
+            onEnd: function() {
+                const orders = [];
+                taskList.querySelectorAll('[data-id]').forEach((el, index) => {
+                    orders.push({ id: parseInt(el.dataset.id), order: index });
+                });
+                fetch('{{ url_for("update_order") }}', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ orders: orders })
+                });
+            }
+        });
+    }
+
+    // Pomodoro Timer Logic
+    let timeLeft = 25 * 60;
+    let timerId = null;
+    const timerDisplay = document.getElementById('timer');
+    const timerBtn = document.getElementById('timerBtn');
+    const timerProgress = document.getElementById('timerProgress');
+
+    function updateDisplay() {
+        const mins = Math.floor(timeLeft / 60);
+        const secs = timeLeft % 60;
+        timerDisplay.textContent = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        const percent = ((25 * 60 - timeLeft) / (25 * 60)) * 100;
+        timerProgress.style.width = `${percent}%`;
+    }
+
+    function toggleTimer() {
+        if (timerId) {
+            clearInterval(timerId);
+            timerId = null;
+            timerBtn.textContent = 'Resume';
+            timerBtn.classList.replace('btn-danger', 'btn-primary');
+        } else {
+            timerBtn.textContent = 'Pause';
+            timerBtn.classList.replace('btn-primary', 'btn-danger');
+            timerId = setInterval(() => {
+                timeLeft--;
+                updateDisplay();
+                if (timeLeft <= 0) {
+                    clearInterval(timerId);
+                    timerId = null;
+                    alert('Time is up! Take a break.');
+                    resetTimer();
+                }
+            }, 1000);
+        }
+    }
+
+    function resetTimer() {
+        clearInterval(timerId);
+        timerId = null;
+        timeLeft = 25 * 60;
+        updateDisplay();
+        timerBtn.textContent = 'Start';
+        timerBtn.classList.replace('btn-danger', 'btn-primary');
+    }
+</script>
+{% endblock %}
